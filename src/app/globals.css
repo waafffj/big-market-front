@@ -25,3 +25,18 @@ body {
   )
   rgb(var(--background-start-rgb));
 }
+
+/* 在全局css中添加 */
+.record-item {
+  @apply flex items-center justify-between py-2 px-3 hover:bg-gray-50;
+  border-bottom: 1px solid #f0f0f0;
+}
+/* 全局样式 */
+.lucky-container {
+  height: clamp(480px, 60vh, 600px); /* 动态高度区间 */
+  padding: 8px;
+}
+
+.record-container {
+  height: clamp(320px, 40vh, 480px); /* 与左侧高度比例协调 */
+}

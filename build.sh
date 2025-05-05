@@ -1,1 +1,1 @@
-docker build -t fuzhengwei/big-market-front-app:1.0
+docker build -t wkm/big-market-front-app:1.0 -f ./DockerfileWindows .

@@ -1,110 +1,177 @@
 "use client"
 
-import React, {useEffect, useRef, useState} from 'react'
-// @ts-ignore
-import {LuckyWheel} from '@lucky-canvas/react'
+import React, { useEffect, useState } from 'react'
 
-import {queryRaffleAwardList, draw} from '@/apis'
-import {RaffleAwardVO} from "@/types/RaffleAwardVO";
+interface AwardRecord {
+    awardTitle: string
+    awardTime: string // 调整为字符串类型
+}
 
-// @ts-ignore
-export function LuckyWheelPage({handleRefresh}) {
-    const [prizes, setPrizes] = useState([{}])
-    const myLucky = useRef()
+export function LuckyWheelPage({ handleRefresh }: { handleRefresh: () => void }) {
+    const [awardRecords, setAwardRecords] = useState<AwardRecord[]>([])
+    const [isLoading, setIsLoading] = useState(true)
 
-    const [blocks] = useState([
-        {padding: '10px', background: '#869cfa', imgs: [{src: "https://bugstack.cn/images/system/blog-03.png"}]}
-    ])
+    const fetchAwardRecords = async () => {
+        try {
+            const queryParams = new URLSearchParams(window.location.search)
+            const userId = queryParams.get('userId')
 
-    const [buttons] = useState([
-        {radius: '40%', background: '#617df2'},
-        {radius: '35%', background: '#afc8ff'},
-        {
-            radius: '30%', background: '#869cfa',
-            pointer: true,
-            fonts: [{text: '开始', top: '-10px'}]
+            if (!userId) {
+                throw new Error('用户ID参数缺失')
+            }
+
+            // 完整接口路径
+            const response = await fetch('http://localhost:1000/api/v1/raffle/activity/query_user_award_record', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userId }),
+            })
+
+            console.log('接口响应状态:', response.status)
+            const result = await response.json()
+            console.log('接口返回数据:', result)
+
+            if (result.code !== "0000") {
+                throw new Error(result.info || '接口返回错误')
+            }
+
+            // 处理日期字符串
+            const processedData = result.data.map((record: any) => ({
+                awardTitle: record.awardTitle,
+                awardTime: new Date(record.awardTime).getTime() // 转换为时间戳
+            }))
+
+            setAwardRecords(
+                processedData
+                    .sort((a, b) => b.awardTime - a.awardTime)
+                    .slice(0, 10)
+            )
+
+        } catch (error) {
+            console.error('数据获取失败:', error)
+            if (isLoading) {
+                window.alert("暂时无法获取中奖记录，请稍后再试")
+            }
+        } finally {
+            setIsLoading(false)
         }
-    ])
-
-    // 查询奖品列表
-    const queryRaffleAwardListHandle = async () => {
-        const queryParams = new URLSearchParams(window.location.search);
-        const userId = String(queryParams.get('userId'));
-        const activityId = Number(queryParams.get('activityId'));
-        const result = await queryRaffleAwardList(userId, activityId);
-        const {code, info, data} = await result.json();
-        if (code != "0000") {
-            window.alert("获取抽奖奖品列表失败 code:" + code + " info:" + info)
-            return;
-        }
-
-        // 创建一个新的奖品数组
-        const prizes = data.map((award: RaffleAwardVO, index: number) => {
-            const background = index % 2 === 0 ? '#e9e8fe' : '#b8c5f2';
-            return {
-                background: background,
-                fonts: [{id: award.awardId, text: award.awardTitle, top: '15px'}]
-            };
-        });
-
-        // 设置奖品数据
-        setPrizes(prizes)
-    }
-
-    // 调用随机抽奖
-    const randomRaffleHandle = async () => {
-        const queryParams = new URLSearchParams(window.location.search);
-        const userId = String(queryParams.get('userId'));
-        const activityId = Number(queryParams.get('activityId'));
-        const result = await draw(userId, activityId);
-        const {code, info, data} = await result.json();
-        if (code != "0000") {
-            window.alert("随机抽奖失败 code:" + code + " info:" + info)
-            return;
-        }
-        // 为了方便测试，mock 的接口直接返回 awardIndex 也就是奖品列表中第几个奖品。
-        return data.awardIndex - 1;
     }
 
     useEffect(() => {
-        queryRaffleAwardListHandle().then(r => {
-        });
+        let isMounted = true
+        const intervalId = setInterval(() => {
+            if (isMounted) fetchAwardRecords()
+        }, 5000)
+
+        fetchAwardRecords()
+
+        return () => {
+            isMounted = false
+            clearInterval(intervalId)
+        }
     }, [])
 
-    return <div>
-        <LuckyWheel
-            ref={myLucky}
-            width="300px"
-            height="300px"
-            blocks={blocks}
-            prizes={prizes}
-            buttons={buttons}
-            onStart={() => {
-                // @ts-ignore
-                myLucky.current.play()
-                setTimeout(() => {
-                    // 抽奖接口
-                    randomRaffleHandle().then(prizeIndex => {
-                            // @ts-ignore
-                            myLucky.current.stop(prizeIndex);
+    return (
+        <div style={{
+            width: '300px',
+            height: '500px',
+            background: '#ffffff',
+            borderRadius: '12px',
+            padding: '20px',
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+            position: 'relative'
+        }}>
+            <h3 style={{
+                fontSize: '18px',
+                color: '#2d3748',
+                marginBottom: '15px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+            }}>
+                <span>🎉</span>
+                最近10条中奖记录
+                {isLoading && (
+                    <div style={{
+                        width: '16px',
+                        height: '16px',
+                        border: '2px solid #e2e8f0',
+                        borderTopColor: '#4299e1',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite'
+                    }}></div>
+                )}
+            </h3>
 
-                            const timer = setTimeout(() => {
-                                handleRefresh()
-                            }, 550);
+            <div style={{
+                height: 'calc(100% - 45px)',
+                overflowY: 'auto',
+                paddingRight: '8px'
+            }}>
+                {awardRecords.length === 0 ? (
+                    <div style={{
+                        textAlign: 'center',
+                        color: '#718096',
+                        padding: '40px 0',
+                        fontSize: '14px'
+                    }}>
+                        {isLoading ? '加载中...' : '暂无中奖记录'}
+                    </div>
+                ) : (
+                    awardRecords.map((record, index) => (
+                        <div key={index} style={{
+                            padding: '12px',
+                            marginBottom: '8px',
+                            background: '#f7fafc',
+                            borderRadius: '8px',
+                            transition: 'transform 0.2s',
+                            ':hover': {
+                                transform: 'translateX(5px)'
+                            }
+                        }}>
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center'
+                            }}>
+                                <div>
+                                    <div style={{
+                                        fontWeight: '600',
+                                        color: '#2d3748',
+                                        marginBottom: '4px'
+                                    }}>
+                                        {record.awardTitle}
+                                    </div>
+                                    <div style={{
+                                        fontSize: '12px',
+                                        color: '#718096'
+                                    }}>
+                                        {new Date(record.awardTime).toLocaleDateString()}
+                                        {' '}
+                                        {new Date(record.awardTime).toLocaleTimeString()}
+                                    </div>
+                                </div>
+                                <div style={{
+                                    fontSize: '14px',
+                                    color: '#4299e1',
+                                    fontWeight: 'bold'
+                                }}>
+                                    #{index + 1}
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
 
-                            // 清除定时器，以防组件在执行前被卸载
-                            return () => clearTimeout(timer);
-                        }
-                    );
-
-                }, 2500)
-            }}
-            onEnd={
-                // @ts-ignore
-                prize => {
-                    alert('恭喜你抽到【' + prize.fonts[0].text + '】奖品ID【' + prize.fonts[0].id + '】')
-                }
-            }
-        />
-    </div>
+            <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
+        </div>
+    )
 }

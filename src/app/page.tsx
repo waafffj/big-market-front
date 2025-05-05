@@ -40,12 +40,12 @@ export default function Home() {
             <div className="flex flex-col md:flex-row gap-4 mb-8">
                 <div className="w-full md:w-1/2 p-6 bg-white shadow-lg rounded-lg">
                     <div className="text-gray-700">
-                        <LuckyWheelPage handleRefresh={handleRefresh}/>
+                        <LuckyGridPage handleRefresh={handleRefresh}/>
                     </div>
                 </div>
                 <div className="w-full md:w-1/2 p-6 bg-white shadow-lg rounded-lg">
                     <div className="text-gray-700">
-                        <LuckyGridPage handleRefresh={handleRefresh}/>
+                        <LuckyWheelPage handleRefresh={handleRefresh}/>
                     </div>
                 </div>
             </div>

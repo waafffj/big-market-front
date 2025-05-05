@@ -66,6 +66,48 @@ export const draw = (userId?: string, activityId?: number) => {
     }
 }
 
+
+/**
+ * 十连抽接口
+ * @param userId 用户ID
+ * @param activityId 活动ID
+ */
+export const drawTen = (userId?: string, activityId?: number) => {
+    try {
+        return fetch(`${apiHostUrl}/api/v1/raffle/activity/drawList`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            body: JSON.stringify({
+                userId: userId,
+                activityId: activityId
+            })
+        })
+    } catch (error) {
+        // 保持与单抽完全一致的错误处理结构
+        return Promise.resolve(new Response(
+            JSON.stringify({
+                code: "0001",
+                info: "十连抽调用失败",
+                data: { awardTitleList: [] }
+            }),
+            {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            }
+        ));
+    }
+}
+export const queryUserAwardRecord = (params: { userId: string }) => {
+    return fetch('/api/query_user_award_record', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(params)
+    })
+}
 /**
  * 查询账户额度
  * @param userId        用户ID

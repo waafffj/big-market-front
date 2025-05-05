@@ -18,8 +18,8 @@ COPY . .
 FROM base AS runner
 WORKDIR /app
 
-EXPOSE 1000
-ENV PORT 1000
+EXPOSE 3000
+ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
 CMD ["yarn", "dev"]
